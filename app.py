@@ -1,9 +1,10 @@
 from googletrans import Translator
 from firebase_admin import credentials, firestore, initialize_app
 import json
-from flask import Flask, request #import main Flask class and request object
+from flask import Flask, request,session #import main Flask class and request object
 import requests
 app = Flask(__name__) #create the Flask app
+app.secret_key = "Revhack"
 texts = {}
 
 from nltk.stem import PorterStemmer
@@ -34,17 +35,21 @@ def hello_world():
 @app.route('/query-example')
 
 def query_example():
-
+    
     docs = db.collection(u'Orders').get()
-
+    session.clear()
     for doc in docs:
         # print(u'{} => {}'.format(doc.id, doc.to_dict()))
         
         texts = doc.to_dict()['userOrder']
+        
+        
+        
         print("1"+str(texts))
         
         dummy = {}
         dummyvalue = 0
+
         for key,value in texts.items():
             
             if "kg" in value:
@@ -60,14 +65,24 @@ def query_example():
             
         texts = dummy
         print(texts)
-
+        for key,value in texts.items():
+            if key in session:
+                session[key] = int(session[key])+int(texts[key])
+            else:
+                session[key] = int(texts[key])
+        print(session)
+        print(type(session))
         translator = Translator()
         translated = {}
         userPrice = {}
         print(texts)
         database = {'sugar':30,'rice':20,'kurkure':5,'tomato':39,'onion':100,'wheat':40,'potato':15,'appl':110,'banana':40,'mango':90}
+        remaining = {'sugar':20,'rice':20,'kurkure':25,'tomato':32,'onion':40,'wheat':40,'potato':35,'appl':60,'banana':50,'mango':10}
+        
+        
         for key, value in texts.items():
             translated[translator.translate(key, dest='kn').text]=value
+            remaining[key] = remaining[key]- texts[key]
         for key,value in texts.items():
             userPrice[translator.translate(key, dest='kn').text] = database[key]
         # for key, value in  texts.items():
@@ -78,7 +93,11 @@ def query_example():
         cost = 0
         for key,value in texts.items():
             cost = cost + int(texts[key])*database[key]
-        data = {'cost':cost,'userOrder':translated,'userPrice':userPrice}
+        total = {}
+        for key in session:
+            total[key] = session[key]
+        
+        data = {'cost':cost,'userOrder':translated,'userPrice':userPrice,'total':total,'remaining':remaining}
         tOrders.document(doc.id).set(data)
     return "Aise taise kara lo"
 
