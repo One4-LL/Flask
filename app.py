@@ -28,6 +28,7 @@ cred = credentials.Certificate(config)
 default_app = initialize_app(cred)
 db = firestore.client()
 tOrders = db.collection('TransOrders')
+SDetails = db.collection('SaleDetails')
 @app.route('/')
 def hello_world(): 
     return '<h1>Welcome to Rev Hack</h1>'
@@ -93,12 +94,16 @@ def query_example():
         cost = 0
         for key,value in texts.items():
             cost = cost + int(texts[key])*database[key]
-        total = {}
-        for key in session:
-            total[key] = session[key]
         
-        data = {'cost':cost,'userOrder':translated,'userPrice':userPrice,'total':total,'remaining':remaining}
+        
+        data = {'cost':cost,'userOrder':translated,'userPrice':userPrice}
+        
         tOrders.document(doc.id).set(data)
+    total = {}
+    for key in session:
+        total[key] = session[key]
+    data2 = {'Daily Expense':total,'remaining':remaining}
+    SDetails.document("katabook").set(data2)
     return "Aise taise kara lo"
 
 
